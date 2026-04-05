@@ -1,0 +1,52 @@
+// MS5/inference_internals/protos/tool.proto
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+package tool;
+
+service ToolService {
+  // For Inference P1: Fetches the full definitions for a list of tools.
+  rpc GetToolDefinitions(GetToolDefinitionsRequest) returns (GetToolDefinitionsResponse);
+  
+  // These other RPCs are for different services, but it's good practice
+  // for the proto to contain the full service definition.
+  rpc ValidateTools(ValidateToolsRequest) returns (ValidateToolsResponse);
+  rpc ExecuteMultipleTools(ExecuteMultipleToolsRequest) returns (ExecuteMultipleToolsResponse);
+}
+
+// Messages for Definition Fetching (The one MS5 uses)
+message GetToolDefinitionsRequest {
+  string user_id = 1;
+  repeated string tool_ids = 2;
+}
+message GetToolDefinitionsResponse {
+  repeated google.protobuf.Struct definitions = 1;
+}
+
+// Other messages used by other services (for completeness)
+message ValidateToolsRequest {
+  string user_id = 1;
+  repeated string tool_ids = 2;
+}
+message ValidateToolsResponse {
+  bool authorized = 1;
+  string error_message = 2;
+}
+message ToolCall {
+    string id = 1;
+    string name = 2;
+    google.protobuf.Struct arguments = 3;
+}
+message ExecuteMultipleToolsRequest {
+  repeated ToolCall tool_calls = 1;
+}
+message ToolResult {
+    string tool_call_id = 1;
+    string name = 2;
+    string status = 3;
+    string output = 4;
+}
+message ExecuteMultipleToolsResponse {
+    repeated ToolResult results = 1;
+}

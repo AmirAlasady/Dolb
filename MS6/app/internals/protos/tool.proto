@@ -1,0 +1,58 @@
+// MS6/app/internals/protos/tool.proto
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+package tool;
+
+service ToolService {
+  // MS6 (Executor) calls this RPC to run tools.
+  rpc ExecuteMultipleTools(ExecuteMultipleToolsRequest) returns (ExecuteMultipleToolsResponse);
+
+  // Other RPCs defined for completeness, but not used by MS6.
+  rpc ValidateTools(ValidateToolsRequest) returns (ValidateToolsResponse);
+  rpc GetToolDefinitions(GetToolDefinitionsRequest) returns (GetToolDefinitionsResponse);
+}
+
+// --- Messages for Tool Execution ---
+message ToolCall {
+    string id = 1; // ID from the LLM to track the call
+    string name = 2;
+    google.protobuf.Struct arguments = 3;
+}
+
+message ExecuteMultipleToolsRequest {
+  repeated ToolCall tool_calls = 1;
+}
+
+message ToolResult {
+    string tool_call_id = 1;
+    string name = 2;
+    string status = 3; // "success" or "error"
+    string output = 4; // The JSON string result of the tool execution
+}
+
+message ExecuteMultipleToolsResponse {
+    repeated ToolResult results = 1;
+}
+
+
+// --- Other messages used by other services (for completeness) ---
+message GetToolDefinitionsRequest {
+  string user_id = 1;
+  repeated string tool_ids = 2;
+}
+
+message GetToolDefinitionsResponse {
+  repeated google.protobuf.Struct definitions = 1;
+}
+
+message ValidateToolsRequest {
+  string user_id = 1;
+  repeated string tool_ids = 2;
+}
+
+message ValidateToolsResponse {
+  bool authorized = 1;
+  string error_message = 2;
+}

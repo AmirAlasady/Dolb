@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+package node;
+
+service NodeService {
+  // Authorizes and retrieves the full details of a node.
+  rpc GetNodeDetails(GetNodeDetailsRequest) returns (GetNodeDetailsResponse);
+}
+
+message GetNodeDetailsRequest {
+  string node_id = 1;
+  string user_id = 2; // User ID from the JWT, used for authorization.
+}
+
+message GetNodeDetailsResponse {
+  string id = 1;
+  string project_id = 2;
+  string owner_id = 3;
+  string name = 4;
+
+  google.protobuf.Struct configuration = 5; // The node's JSON configuration.
+  string status = 6; 
+}

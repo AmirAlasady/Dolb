@@ -1,0 +1,2071 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MS14 Logic Engine Control</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    header {
+      padding: 0 20px;
+      height: 55px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 420px 1fr 400px;
+      overflow: hidden;
+    }
+
+    .col {
+      padding: 15px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .card {
+      background: #162032;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    /* Inputs & Buttons */
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      font-family: "Consolas", monospace;
+      /* Monospace for inputs helps with IDs */
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 1px solid var(--primary);
+      border-color: transparent;
+    }
+
+    button {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.1s;
+    }
+
+    button:hover {
+      background: var(--border);
+    }
+
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      width: 100%;
+    }
+
+    button.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    button.primary:disabled {
+      background: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+      border-color: var(--border);
+    }
+
+    button.danger {
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    button.danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    button.sm {
+      padding: 2px 6px;
+      font-size: 10px;
+      width: auto;
+    }
+
+    /* Rich Lists */
+    .item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #334155;
+    }
+
+    .item-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .badge {
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-left: 5px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .badge.green {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .badge.blue {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge.yellow {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge.red {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .badge.gray {
+      background: #334155;
+      color: #94a3b8;
+    }
+
+    /* Checkbox Group */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+      background: var(--bg);
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      padding: 3px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .checkbox-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox-item input {
+      width: auto;
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    /* Execution Panel */
+    .exec-card {
+      border: 1px solid #22c55e;
+      background: linear-gradient(135deg, #0f2818 0%, #162032 100%);
+    }
+
+    .exec-card h2 {
+      color: #22c55e;
+    }
+
+    .start-input-group {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .start-input-group label {
+      color: #86efac;
+      font-weight: 700;
+    }
+
+    .monitor-panel {
+      border: 1px solid var(--primary);
+      background: #0b1628;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .run-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .run-badge.seeding {
+      background: #1e3a5f;
+      color: #60a5fa;
+    }
+
+    .run-badge.running {
+      background: #422006;
+      color: #fbbf24;
+      animation: pulse 1.5s infinite;
+    }
+
+    .run-badge.completed {
+      background: #14532d;
+      color: #4ade80;
+    }
+
+    .run-badge.failed {
+      background: #450a0a;
+      color: #f87171;
+    }
+
+    .run-badge.unknown {
+      background: #334155;
+      color: #94a3b8;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+    }
+
+    .rule-status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-bottom: 1px solid #1e293b;
+      transition: background 0.3s;
+    }
+
+    .rule-status-row:hover {
+      background: #1e293b;
+    }
+
+    .rule-status-row:last-child {
+      border-bottom: none;
+    }
+
+    .rule-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.5s;
+    }
+
+    .rule-dot.idle {
+      background: #64748b;
+    }
+
+    .rule-dot.dispatched {
+      background: #fbbf24;
+      animation: pulse 1s infinite;
+    }
+
+    .rule-dot.completed {
+      background: #4ade80;
+    }
+
+    .rule-dot.failed {
+      background: #f87171;
+    }
+
+    .rule-status-name {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .rule-status-node {
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    .rule-status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .ms15-url-input {
+      font-size: 10px;
+      padding: 3px 6px;
+      background: #0b101b;
+      border: 1px solid #1e293b;
+      color: #64748b;
+      border-radius: 3px;
+      width: 180px;
+    }
+
+    /* Logs */
+    #log {
+      font-family: "Consolas", monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      color: var(--muted);
+    }
+
+    .log-line {
+      margin-bottom: 3px;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 2px;
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Recursive Context Styler */
+    .ctx-wrapper {
+      font-family: "Consolas", monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #94a3b8;
+    }
+
+    .ctx-node {
+      color: #a5f3fc;
+      font-weight: bold;
+    }
+
+    .ctx-op {
+      color: #f59e0b;
+      font-weight: bold;
+    }
+
+    .ctx-seed {
+      color: #22c55e;
+    }
+
+    .ctx-feedback {
+      color: #f97316;
+      font-weight: bold;
+    }
+
+    .ctx-feedback-raw {
+      color: #7c3aed;
+      font-style: italic;
+    }
+
+    /* edge type pills */
+    .edge-forward { border-left-color: var(--primary) !important; }
+    .edge-feedback { border-left-color: #f97316 !important; }
+
+    /* Modal */
+    dialog {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0;
+      min-width: 600px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      padding: 15px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      background: #111827;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+    /* Loop Controller Badge */
+    .loop-ctrl-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(249,115,22,0.15);
+      color: #f97316;
+      border: 1px solid rgba(249,115,22,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Iteration counter pill */
+    .iter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(139,92,246,0.18);
+      color: #c4b5fd;
+      border: 1px solid rgba(139,92,246,0.35);
+    }
+
+    /* Node execution card */
+    .trace-node-card {
+      background: linear-gradient(135deg, #0d1b2a 0%, #162032 100%);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .trace-node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .trace-node-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #a5f3fc;
+    }
+
+    .trace-node-rules {
+      padding: 4px 6px;
+    }
+
+    .trace-rule-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 6px;
+      border-radius: 4px;
+      margin-bottom: 2px;
+      transition: background 0.2s;
+    }
+
+    .trace-rule-row:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .trace-rule-row.state-dispatched {
+      background: rgba(251,191,36,0.05);
+    }
+
+    .trace-rule-row.state-completed {
+      background: rgba(74,222,128,0.04);
+    }
+
+    .trace-rule-row.state-failed {
+      background: rgba(248,113,113,0.07);
+    }
+
+    /* Max-iter input with orange glow on focus */
+    #maxIterWrapper {
+      margin-bottom: 8px;
+      border: 1px dashed rgba(249,115,22,0.4);
+      background: rgba(249,115,22,0.06);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: none;
+    }
+
+    #maxIterWrapper.visible { display: block; }
+
+    #maxIterWrapper label {
+      color: #fb923c;
+      font-weight: 700;
+    }
+
+    #maxIterWrapper input:focus {
+      outline: 1px solid #f97316;
+    }
+
+    /* Run progress bar */
+    .run-progress-wrap {
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      margin: 8px 0 10px;
+      overflow: hidden;
+    }
+
+    .run-progress-bar {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      transition: width 0.5s ease;
+    }
+
+    /* Legend strip */
+    .monitor-legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 6px 8px;
+      background: #0a1628;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <h1>Graph Control Plane</h1>
+      <span id="authStatus" class="badge red">Unauthenticated</span>
+      <span id="graphStatus" class="badge gray">No Graph</span>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="refreshGraphData()">↻ Refresh Data</button>
+      <button onclick="clearLog()">Clear Log</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- COLUMN 1: CONFIGURATION -->
+    <div class="col">
+
+      <div class="card">
+        <h2>1. Context Setup</h2>
+        <input type="password" id="token" placeholder="Bearer Token" onchange="setToken()">
+        <input type="text" id="projectId" placeholder="Project UUID" onchange="loadGraphs()">
+        <div class="flex-row">
+          <select id="graphSelect" onchange="selectGraph()" style="flex:1">
+            <option>Load project first...</option>
+          </select>
+          <button class="sm danger" onclick="deleteCurrentGraph()">🗑️</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. Topology (Nodes & Edges)</h2>
+        <div class="flex-row" style="margin-bottom:10px;">
+          <button class="sm primary" onclick="showTab('tabNode')">Add Node</button>
+          <button class="sm" onclick="showTab('tabEdge')">Add Edge</button>
+          <button class="sm" onclick="showTab('tabGraph')">New Graph</button>
+        </div>
+
+        <div id="tabNode">
+          <input id="nodeName" placeholder="Node Name (e.g. 'Summarizer')">
+          <input id="nodeMs4Id" placeholder="MS4 UUID (Optional)">
+          <label><input type="checkbox" id="nodeIsStart" style="width:auto;"> Is Start Node?</label>
+          <button class="primary" onclick="createNode()">Create Node</button>
+        </div>
+
+        <div id="tabEdge" style="display:none;">
+          <div class="flex-row">
+            <div style="flex:1"><label>From</label><select id="edgeSource"></select></div>
+            <div style="flex:1"><label>To</label><select id="edgeDest"></select></div>
+          </div>
+          <button class="primary" onclick="createEdge()" style="margin-top:10px;">Connect Nodes</button>
+        </div>
+
+        <div id="tabGraph" style="display:none;">
+          <input id="newGraphName" placeholder="Graph Name">
+          <button class="primary" onclick="createGraph()">Create Graph</button>
+        </div>
+      </div>
+
+      <div class="card" style="border: 1px solid var(--primary);">
+        <h2 style="color:var(--primary)">3. Logic Wizard (Rule Builder)</h2>
+
+        <label>A. Rule Owner (Where does logic run?)</label>
+        <select id="ruleOwner" onchange="renderRuleOptions()"></select>
+
+        <label>B. Select Inputs (Checkbox)</label>
+        <div id="ruleInputsContainer" class="checkbox-group">
+          <span style="color:#64748b; padding:5px;">Select an owner node above...</span>
+        </div>
+
+        <div class="flex-row">
+          <div style="flex:2">
+            <label>C. Rule Name</label>
+            <input id="ruleName" placeholder="e.g. 'Merge & Summarize'">
+          </div>
+          <div style="flex:1">
+            <label>D. Mode</label>
+            <select id="ruleMode">
+              <option value="SINGLE">SINGLE</option>
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+            </select>
+          </div>
+        </div>
+
+        <label>E. Output Destinations</label>
+        <div id="ruleOutputsContainer" class="checkbox-group">
+          <span style="color:#64748b; padding:5px;">Select an owner node above...</span>
+        </div>
+
+        <!-- F. max_iterations — only shown when FBO output is selected -->
+        <div id="maxIterWrapper">
+          <label>F. Max Iterations ↩ <span style="font-weight:400; color:#94a3b8; font-size:10px;">Controller loops only · leave blank for infinite</span></label>
+          <input type="number" id="maxIterations" min="1" placeholder="e.g. 3  (blank = infinite loop)" style="margin-bottom:3px;">
+          <div style="font-size:10px; color:#7c3aed; line-height:1.4;">⚠️ When set, MS15 will exit the loop after this many completed iterations regardless of AI output.</div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:center;">
+          <label><input type="checkbox" id="ruleTerminal" style="width:auto;"> Terminal Rule (End)?</label>
+          <button class="primary sm" id="btnCreateRule" style="width:auto; padding:6px 15px;"
+            onclick="createRule()">Create Rule</button>
+        </div>
+        <div id="ruleValidationMsg" style="font-size:10px; color:orange; margin-top:5px; height:14px;"></div>
+      </div>
+
+      <div class="card" style="border: 1px solid #6366f1;">
+        <h2 style="color:#a5b4fc;">MS4 Nodes</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="margin:0; font-size:11px;">MS4 URL</label>
+          <input class="ms15-url-input" id="ms4Url" value="http://localhost:8003" style="max-width:200px;">
+        </div>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <input id="ms4NodeName" placeholder="New node name" style="flex:1;">
+          <button class="primary sm" onclick="createMs4Node()">Create</button>
+          <button class="sm" onclick="loadMs4Nodes()">Refresh</button>
+        </div>
+        <div id="ms4NodesList" style="max-height:250px; overflow-y:auto; font-size:11px; color:#94a3b8;">Enter project
+          ID above, then click Refresh</div>
+      </div>
+
+      <div class="card exec-card">
+        <h2>4. Execute Graph &#9654;</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="margin:0;">MS15 URL</label>
+          <input class="ms15-url-input" id="ms15Url" value="http://localhost:8015">
+        </div>
+        <button class="primary" onclick="executeGraph()" id="btnExecute" style="margin-top:4px;">
+          &#9654; Run Graph
+        </button>
+        <div id="execResult" style="font-size:11px; margin-top:6px; color:#94a3b8;"></div>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: TOPOLOGY VISUALIZATION -->
+    <div class="col" style="background:#0b101b;">
+      <div>
+        <h2>Nodes <span id="countNodes" class="badge gray">0</span></h2>
+        <div id="nodesList"></div>
+      </div>
+      <div>
+        <h2>Rules (Logic) <span id="countRules" class="badge gray">0</span></h2>
+        <div id="rulesList"></div>
+      </div>
+
+      <!-- EXECUTION MONITOR -->
+      <div id="monitorSection" class="monitor-panel" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <h2 style="margin:0; color: var(--primary);">⚡ Execution Trace</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="sm danger" id="btnCancelRun" onclick="cancelRun()"
+              style="display:none; padding:4px 10px; font-size:10px;">Cancel</button>
+            <span id="runStatusBadge" class="run-badge unknown">--</span>
+          </div>
+        </div>
+        <div style="font-size:10px; color:#64748b; margin-bottom:4px;">
+          Run: <code id="monRunId" style="color:#94a3b8;">--</code>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="run-progress-wrap">
+          <div class="run-progress-bar" id="runProgressBar" style="width:0%;"></div>
+        </div>
+
+        <!-- Stats row -->
+        <div id="runStatsRow" style="display:flex; gap:10px; margin-bottom:8px; font-size:10px; color:#64748b;"></div>
+
+        <!-- Legend -->
+        <div class="monitor-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div>Idle</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fbbf24; animation:pulse 1s infinite;"></div>Dispatched</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div>Completed</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div>Failed</div>
+          <div class="legend-item"><span style="color:#c4b5fd;">🔄 N×</span>&nbsp;Loop iterations</div>
+          <div class="legend-item"><span style="color:#eab308;">⚓</span>&nbsp;Node anchored</div>
+        </div>
+
+        <!-- Node-grouped rule cards -->
+        <div id="traceNodeCards"></div>
+
+        <!-- Termination summary -->
+        <div id="terminationSummary" style="display:none; margin-top:10px; padding:10px;
+          border-radius:6px; border:1px solid;"></div>
+      </div>
+    </div>
+
+    <!-- COLUMN 3: DEEP STATE & LOGS -->
+    <div class="col">
+      <div>
+        <h2>Context Resolution (Projections)</h2>
+        <div id="projectionsList"></div>
+      </div>
+      <div>
+        <h2>Physical Wiring (Edges)</h2>
+        <div id="edgesList"></div>
+      </div>
+      <div style="margin-top:auto; height:200px; display:flex; flex-direction:column;">
+        <h2>System Logs</h2>
+        <div id="log" style="flex:1; overflow-y:auto; background:#000; padding:10px; border-radius:4px;"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- PROMPT TEMPLATE EDITOR -->
+  <dialog id="promptModal">
+    <div class="modal-header">
+      <h2 style="margin:0; color:#fff;">Prompt Template Editor</h2>
+      <button class="sm" onclick="document.getElementById('promptModal').close()">Close</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#94a3b8; font-size:12px; margin-top:0;">
+        Edit the prompt sent to the LLM. Use placeholders like <code>{in1}</code> to inject data.
+      </p>
+      <div id="promptMap" class="code-block"
+        style="background:#0f172a; padding:10px; border:1px solid #334155; margin-bottom:10px; max-height:100px; overflow:auto;">
+      </div>
+
+      <textarea id="promptText"
+        style="width:100%; height:250px; font-family:monospace; background:#0b101b; color:#e2e8f0; padding:10px; font-size:13px;"></textarea>
+
+      <div style="text-align:right; margin-top:10px;">
+        <button class="primary" onclick="savePromptTemplate()">Save Template</button>
+      </div>
+    </div>
+    </div>
+  </dialog>
+
+  <!-- NODE EDITOR DIALOG -->
+  <dialog id="nodeEditModal">
+    <div class="modal-header">
+      <h2 style="margin:0; color:#fff;">Edit Node</h2>
+      <button class="sm" onclick="document.getElementById('nodeEditModal').close()">Close</button>
+    </div>
+    <div class="modal-body">
+      <label>Node Name</label>
+      <input id="editNodeName">
+
+      <label>MS4 Node UUID</label>
+      <input id="editNodeMs4">
+
+      <div style="margin:10px 0; background:#334155; padding:10px; border-radius:4px;">
+        <label style="margin:0; cursor:pointer; color:#fff;">
+          <input type="checkbox" id="editNodeStart" style="width:auto; margin-right:5px;">
+          Is Start Node?
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="primary" onclick="saveNodeUpdate()">Save Changes</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MS4 ELEVATE MODAL -->
+  <dialog id="ms4ElevateModal">
+    <div class="modal-header">
+      <h2 style="margin:0; color:#fff;">Elevate MS4 Node</h2>
+      <button class="sm" onclick="document.getElementById('ms4ElevateModal').close()">Close</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:#94a3b8; font-size:12px;">Link this draft node to an MS3 Model UUID to activate it.</p>
+      <label>MS3 Model UUID</label>
+      <input id="ms4ElevateModelId" placeholder="Enter Model UUID">
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="primary" onclick="elevateMs4Node()">Elevate Node</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MS4 UPDATE MODAL -->
+  <dialog id="ms4UpdateModal">
+    <div class="modal-header">
+      <h2 style="margin:0; color:#fff;">Update MS4 Node</h2>
+      <button class="sm" onclick="document.getElementById('ms4UpdateModal').close()">Close</button>
+    </div>
+    <div class="modal-body">
+      <div id="ms4UpdateForm">
+        <!-- Form fields will be dynamically injected here -->
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="primary" onclick="saveMs4Update()">Save Configuration</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    const API_BASE = "/ms14/api/v1";
+    let STATE = { token: "", projectId: "", graphId: "", nodes: [], edges: [], rules: [], projections: [], ffos: [], ffis: [], fbis: [], fbos: [], activeRuleId: null };
+    let EXEC = { runId: null, pollTimer: null, ms4ActiveNodeId: null };
+    var MS4_NODES = [];
+
+    // ============================================
+    // MS4 API HELPER
+    // ============================================
+    async function ms4Api(endpoint, method, body) {
+      method = method || 'GET';
+      var ms4Url = document.getElementById('ms4Url').value.trim();
+      if (!ms4Url) { log('MS4 URL not set', 'err'); return null; }
+      if (!STATE.token) { log('Not authenticated', 'err'); return null; }
+
+      var headers = { 'Authorization': 'Bearer ' + STATE.token, 'Content-Type': 'application/json' };
+      log('> MS4 ' + method + ' ' + endpoint, 'req');
+
+      try {
+        var opts = { method: method, headers: headers };
+        if (body) opts.body = JSON.stringify(body);
+        var res = await fetch(ms4Url + '/ms4/api/v1' + endpoint, opts);
+        if (res.status === 204) { log('< MS4 204 No Content', 'ok'); return null; }
+        if (!res.ok) {
+          var errText = await res.text();
+          log('< MS4 ERROR ' + res.status + ': ' + errText, 'err');
+          return null;
+        }
+        var data = await res.json();
+        log('< MS4 ' + method + ' ' + endpoint + ' (' + res.status + ')', 'ok');
+        return data;
+      } catch (e) {
+        log('MS4 NETWORK ERROR: ' + e.message, 'err');
+        return null;
+      }
+    }
+
+    async function loadMs4Nodes() {
+      if (!STATE.projectId) return alert('Enter a Project ID first');
+      var nodes = await ms4Api('/projects/' + STATE.projectId + '/nodes/');
+      if (!nodes) return;
+      MS4_NODES = nodes;
+      renderMs4Nodes();
+    }
+
+    function renderMs4Nodes() {
+      var container = document.getElementById('ms4NodesList');
+      if (MS4_NODES.length === 0) {
+        container.innerHTML = '<span style="color:#64748b;">No MS4 nodes in this project.</span>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < MS4_NODES.length; i++) {
+        var n = MS4_NODES[i];
+        var statusColor = n.status === 'active' ? '#4ade80' : n.status === 'draft' ? '#fbbf24' : '#94a3b8';
+        var usedTag = n.is_used_in_graph ? ' <span style="color:#f87171; font-weight:700;">IN GRAPH</span>' : '';
+
+        html += '<div style="background:#111827; border:1px solid #334155; padding:8px; border-radius:4px; margin-bottom:8px;">';
+        html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px;">';
+        html += '<div>';
+        html += '<div style="color:#e2e8f0; font-weight:600; font-size:12px;">' + n.name + '</div>';
+        html += '<div style="font-size:9px; color:#475569; font-family:monospace;">' + n.id + '</div>';
+        html += '</div>';
+        html += '<span style="color:' + statusColor + '; font-size:10px; border:1px solid ' + statusColor + '40; padding:1px 4px; border-radius:3px;">' + n.status.toUpperCase() + '</span>';
+        html += '</div>';
+
+        html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+        html += '<div>' + usedTag + '</div>';
+        html += '<div style="display:flex; gap:5px;">';
+        if (n.status === 'draft') {
+          html += '<button class="sm primary" onclick="openMs4ElevateModal(\'' + n.id + '\')">Elevate</button>';
+        } else {
+          html += '<button class="sm" onclick="openMs4UpdateModal(\'' + n.id + '\')">Update</button>';
+        }
+        html += '<button class="sm danger" onclick="deleteMs4Node(\'' + n.id + '\')">Del</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    async function createMs4Node() {
+      if (!STATE.projectId) return alert('Enter a Project ID first');
+      var name = document.getElementById('ms4NodeName').value.trim();
+      if (!name) return alert('Enter a node name');
+      var result = await ms4Api('/nodes/draft/', 'POST', { name: name, project_id: STATE.projectId });
+      if (result) {
+        log('MS4 Node created: ' + result.name + ' (' + result.id + ')', 'ok');
+        document.getElementById('ms4NodeName').value = '';
+        loadMs4Nodes();
+      }
+    }
+
+    async function deleteMs4Node(nodeId) {
+      if (!confirm('Delete MS4 node ' + nodeId.substring(0, 8) + '...?')) return;
+      await ms4Api('/nodes/' + nodeId + '/', 'DELETE');
+      log('MS4 Node deleted: ' + nodeId, 'ok');
+      loadMs4Nodes();
+    }
+
+    function openMs4ElevateModal(nodeId) {
+      EXEC.ms4ActiveNodeId = nodeId;
+      document.getElementById('ms4ElevateModelId').value = '';
+      document.getElementById('ms4ElevateModal').showModal();
+    }
+
+    async function elevateMs4Node() {
+      var modelId = document.getElementById('ms4ElevateModelId').value.trim();
+      if (!modelId) return alert('Model UUID required');
+      var res = await ms4Api('/nodes/' + EXEC.ms4ActiveNodeId + '/configure-model/', 'POST', { model_id: modelId });
+      if (res) {
+        log('Node elevated successfully', 'ok');
+        document.getElementById('ms4ElevateModal').close();
+        loadMs4Nodes();
+      }
+    }
+
+    async function openMs4UpdateModal(nodeId) {
+      EXEC.ms4ActiveNodeId = nodeId;
+      var node = await ms4Api('/nodes/' + nodeId + '/');
+      if (!node) return;
+
+      var form = document.getElementById('ms4UpdateForm');
+      var html = '<label>Name</label><input id="ms4UpdateName" value="' + node.name + '">';
+
+      var cfg = node.configuration || {};
+
+      // Memory
+      if (cfg.memory_config) {
+        html += '<div style="margin-top:10px; padding:10px; background:#1e293b; border-radius:4px; border:1px solid #334155;">';
+        html += '<label style="cursor:pointer; color:#fff;"><input type="checkbox" id="ms4CfgMemEnabled" style="width:auto; margin-right:5px;" ' + (cfg.memory_config.is_enabled ? 'checked' : '') + '> Memory Enabled</label>';
+        html += '<label style="margin-top:5px;">Bucket ID</label><input id="ms4CfgMemBucket" value="' + (cfg.memory_config.bucket_id || '') + '">';
+        html += '</div>';
+      }
+
+      // RAG
+      if (cfg.rag_config) {
+        html += '<div style="margin-top:10px; padding:10px; background:#1e293b; border-radius:4px; border:1px solid #334155;">';
+        html += '<label style="cursor:pointer; color:#fff;"><input type="checkbox" id="ms4CfgRagEnabled" style="width:auto; margin-right:5px;" ' + (cfg.rag_config.is_enabled ? 'checked' : '') + '> RAG Enabled</label>';
+        html += '<label style="margin-top:5px;">Collection ID</label><input id="ms4CfgRagCollection" value="' + (cfg.rag_config.collection_id || '') + '">';
+        html += '</div>';
+      }
+
+      // Tools
+      if (cfg.tool_config) {
+        html += '<div style="margin-top:10px; padding:10px; background:#1e293b; border-radius:4px; border:1px solid #334155;">';
+        html += '<label>Tool IDs (JSON Array)</label>';
+        var toolIdsStr = JSON.stringify(cfg.tool_config.tool_ids || []);
+        html += '<textarea id="ms4CfgTools" style="width:100%; height:80px; font-family:monospace; background:#0b101b; color:#e2e8f0; font-size:12px;">' + toolIdsStr + '</textarea>';
+        html += '</div>';
+      }
+
+      form.innerHTML = html;
+      document.getElementById('ms4UpdateModal').showModal();
+    }
+
+    async function saveMs4Update() {
+      var nodeId = EXEC.ms4ActiveNodeId;
+      var name = document.getElementById('ms4UpdateName').value.trim();
+
+      // Fetch details again to get original configuration object to merge into
+      var node = await ms4Api('/nodes/' + nodeId + '/');
+      if (!node) return;
+
+      var cfg = node.configuration;
+
+      if (cfg.memory_config) {
+        cfg.memory_config.is_enabled = document.getElementById('ms4CfgMemEnabled').checked;
+        cfg.memory_config.bucket_id = document.getElementById('ms4CfgMemBucket').value.trim();
+      }
+      if (cfg.rag_config) {
+        cfg.rag_config.is_enabled = document.getElementById('ms4CfgRagEnabled').checked;
+        cfg.rag_config.collection_id = document.getElementById('ms4CfgRagCollection').value.trim();
+      }
+      if (cfg.tool_config) {
+        try {
+          cfg.tool_config.tool_ids = JSON.parse(document.getElementById('ms4CfgTools').value.trim());
+        } catch (e) {
+          return alert('Invalid JSON in Tool IDs');
+        }
+      }
+
+      // CRITICAL FIX: The MS4 backend prohibits sending model_id in the PUT request.
+      // We must remove it from the configuration before sending.
+      if (cfg.model_config && cfg.model_config.model_id) {
+        delete cfg.model_config.model_id;
+      }
+
+      var res = await ms4Api('/nodes/' + nodeId + '/', 'PUT', { name: name, configuration: cfg });
+      if (res) {
+        log('Node updated effectively', 'ok');
+        document.getElementById('ms4UpdateModal').close();
+        loadMs4Nodes();
+      }
+    }
+
+    // ============================================
+    // EXECUTION & MONITORING
+    // ============================================
+
+    async function executeGraph() {
+      if (!STATE.graphId) return alert('Select a graph first');
+      var ms15 = document.getElementById('ms15Url').value.trim();
+      if (!ms15) return alert('MS15 URL required');
+
+      var startNodes = STATE.nodes.filter(function (n) { return n.is_start; });
+      if (startNodes.length === 0) return alert('No start nodes defined in this graph!');
+
+      // Read individual seed input for each start node
+      var inputs = {};
+      for (var i = 0; i < startNodes.length; i++) {
+        var n = startNodes[i];
+        var el = document.getElementById('seed_' + n.id);
+        var val = el ? el.value.trim() : '';
+        if (!val) return alert('Please enter seed input for start node: ' + n.name);
+        inputs[n.id] = val;
+      }
+
+      var btn = document.getElementById('btnExecute');
+      btn.disabled = true;
+      btn.textContent = 'Starting...';
+      document.getElementById('execResult').innerHTML = '';
+
+      try {
+        var res = await fetch(ms15 + '/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + STATE.token
+          },
+          body: JSON.stringify({ graph_id: STATE.graphId, inputs: inputs })
+        });
+
+        if (!res.ok) {
+          var errText = await res.text();
+          throw new Error('MS15 error ' + res.status + ': ' + errText);
+        }
+
+        var runId = await res.text();
+        EXEC.runId = runId.replace(/"/g, '');
+        log('Graph execution started: ' + EXEC.runId, 'ok');
+        document.getElementById('execResult').innerHTML = '<span style="color:#4ade80;">Run: ' + EXEC.runId.substring(0, 12) + '...</span>';
+
+        startMonitoring();
+
+      } catch (e) {
+        log('Execute failed: ' + e.message, 'err');
+        document.getElementById('execResult').innerHTML = '<span style="color:#f87171;">Error: ' + e.message + '</span>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run Graph';
+      }
+    }
+
+    function startMonitoring() {
+      if (EXEC.pollTimer) clearInterval(EXEC.pollTimer);
+
+      const section = document.getElementById('monitorSection');
+      section.style.display = 'block';
+      document.getElementById('monRunId').textContent = EXEC.runId;
+      document.getElementById('traceNodeCards').innerHTML = '<span style="color:#64748b">Waiting for first poll...</span>';
+      document.getElementById('terminationSummary').style.display = 'none';
+      document.getElementById('runProgressBar').style.width = '0%';
+      document.getElementById('runStatsRow').innerHTML = '';
+      document.getElementById('runStatusBadge').textContent = 'STARTING';
+      document.getElementById('runStatusBadge').className = 'run-badge seeding';
+
+      // Poll immediately, then every 2s
+      pollRunStatus();
+      EXEC.pollTimer = setInterval(pollRunStatus, 2000);
+    }
+
+    async function pollRunStatus() {
+      if (!EXEC.runId) return;
+      const ms15 = document.getElementById('ms15Url').value.trim();
+
+      try {
+        const res = await fetch(`${ms15}/run/${EXEC.runId}/status`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+
+        // Update run status badge
+        const badge = document.getElementById('runStatusBadge');
+        const statusLower = (data.run_status || 'unknown').toLowerCase();
+        badge.textContent = data.run_status;
+        badge.className = `run-badge ${statusLower}`;
+
+        // Toggle cancel button
+        const cancelBtn = document.getElementById('btnCancelRun');
+        if (statusLower === 'running' || statusLower === 'seeding') {
+          cancelBtn.style.display = 'inline-block';
+        } else {
+          cancelBtn.style.display = 'none';
+        }
+
+        // ==================================================
+        // ENHANCED EXECUTION TRACE: node-grouped, loop-aware
+        // ==================================================
+        const rules = data.rules || [];
+        const loopStates = data.loop_states || {};
+        const anchoredNodes = data.anchored_nodes || {};
+
+        // Compute stats
+        const total = rules.length;
+        const done = rules.filter(r => { const s = (r.status||'').toLowerCase(); return s === 'completed' || s === 'failed'; }).length;
+        const terminals = rules.filter(r => r.is_terminal);
+        const termDone = terminals.filter(r => (r.status||'').toLowerCase() === 'completed').length;
+        const loopRules = rules.filter(r => r.is_controller);
+        const activeLoops = loopRules.filter(r => (loopStates[r.id] || 0) > 0).length;
+
+        // Progress bar: based on fraction done
+        const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+        document.getElementById('runProgressBar').style.width = pct + '%';
+
+        // Stats row
+        document.getElementById('runStatsRow').innerHTML =
+          `<span>🎯 <b>${termDone}/${terminals.length}</b> terminals done</span>` +
+          `<span>✅ <b>${done}/${total}</b> rules settled</span>` +
+          (loopRules.length > 0 ? `<span>🔄 <b>${activeLoops}</b> active loop${activeLoops !== 1 ? 's' : ''}</span>` : '');
+
+        // Group rules by owner_node_id
+        const byNode = {};
+        rules.forEach(r => {
+          if (!byNode[r.owner_node]) byNode[r.owner_node] = [];
+          byNode[r.owner_node].push(r);
+        });
+
+        // Sort nodes alphabetically by node name for stable card ordering
+        const sortedNodeEntries = Object.entries(byNode).sort((a, b) => {
+          const nameA = (a[1][0].owner_node_name || a[0]).toLowerCase();
+          const nameB = (b[1][0].owner_node_name || b[0]).toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        // Render node cards
+        let cardsHtml = '';
+        for (const [nodeId, nodeRules] of sortedNodeEntries) {
+          const nodeName = nodeRules[0].owner_node_name || nodeId.substring(0, 8);
+          const isAnchored = anchoredNodes[nodeId] === true;
+
+          // Node-level status: any dispatched → yellow, all done → green, any failed → red, else gray
+          const allStatuses = nodeRules.map(r => (r.status || 'idle').toLowerCase());
+          let nodeState = 'idle';
+          if (allStatuses.some(s => s === 'dispatched')) nodeState = 'dispatched';
+          else if (allStatuses.every(s => s === 'completed')) nodeState = 'completed';
+          else if (allStatuses.some(s => s === 'failed')) nodeState = 'failed';
+
+          const nodeStateColors = {
+            idle: '#64748b', dispatched: '#fbbf24', completed: '#4ade80', failed: '#f87171'
+          };
+          const nodeColor = nodeStateColors[nodeState] || '#64748b';
+
+          // Node badges
+          const hasLoop = nodeRules.some(r => r.is_controller);
+          const loopIter = nodeRules.reduce((max, r) => Math.max(max, loopStates[r.id] || 0), 0);
+
+          cardsHtml += `<div class="trace-node-card" style="border-color:${nodeColor}40;">
+            <div class="trace-node-header">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div class="rule-dot ${nodeState}" style="width:10px;height:10px;"></div>
+                <span class="trace-node-name">${escHtml(nodeName)}</span>
+                ${isAnchored ? '<span title="Node Anchored" style="color:#eab308; font-size:12px;">⚓</span>' : ''}
+              </div>
+              <div style="display:flex; gap:4px; align-items:center;">
+                ${hasLoop && loopIter > 0 ? `<span class="iter-pill">🔄 ${loopIter} iter${loopIter !== 1 ? 's' : ''}</span>` : ''}
+                ${hasLoop ? '<span class="loop-ctrl-badge">↩ CTRL</span>' : ''}
+              </div>
+            </div>
+            <div class="trace-node-rules">`;
+
+          // Sort rules within each node by name for stable ordering
+          const sortedRules = [...nodeRules].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+          for (const r of sortedRules) {
+            const sLower = (r.status || 'idle').toLowerCase();
+            const statusColors = { idle: '#64748b', dispatched: '#fbbf24', completed: '#4ade80', failed: '#f87171' };
+            const color = statusColors[sLower] || '#94a3b8';
+            const iterations = loopStates[r.id] || 0;
+            const maxIter = r.max_iterations;
+            const attempts = r.attempt_count || 0;
+
+            const iterBadge = (r.is_controller && iterations > 0)
+              ? `<span class="iter-pill" title="Loop iterations completed">🔄 ${iterations}${maxIter ? '/' + maxIter : '×'}</span>`
+              : '';
+
+            // Show attempt counter when rule has run more than once
+            const attemptBadge = attempts > 1
+              ? `<span style="font-size:9px; color:#a78bfa; background:#a78bfa18; border:1px solid #a78bfa30; border-radius:3px; padding:1px 4px; white-space:nowrap;" title="Times dispatched">×${attempts}</span>`
+              : '';
+
+            const typeFlags = [
+              r.is_terminal ? '<span style="color:#f87171;font-size:9px;font-weight:700;">TERM</span>' : '',
+              r.is_controller ? '<span class="loop-ctrl-badge" style="font-size:8px;padding:1px 4px;">CTRL</span>' : '',
+            ].filter(Boolean).join('');
+
+            cardsHtml += `
+              <div class="trace-rule-row state-${sLower}" style="min-height:38px;">
+                <div class="rule-dot ${sLower}"></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                    <span style="font-weight:600; font-size:12px; color:#e2e8f0; white-space:nowrap;">${escHtml(r.name || 'Rule')}</span>
+                    ${typeFlags}
+                  </div>
+                  <div style="font-size:10px; color:#475569; margin-top:1px; font-family:monospace;">${r.id ? r.id.substring(0,8) : ''}…  <span style="color:#64748b;">mode: ${r.firing_mode || '-'}</span></div>
+                </div>
+                ${attemptBadge}
+                ${iterBadge}
+                <span class="rule-status-badge" style="color:${color};border:1px solid ${color}30;background:${color}15;white-space:nowrap;">${r.status || 'IDLE'}</span>
+              </div>`;
+          }
+
+          cardsHtml += `</div></div>`;
+        }
+
+        if (Object.keys(byNode).length === 0) {
+          cardsHtml = '<span style="color:#64748b">Waiting for snapshot...</span>';
+        }
+        document.getElementById('traceNodeCards').innerHTML = cardsHtml;
+
+        // Stop polling + show termination summary when done
+        if (statusLower === 'completed' || statusLower === 'failed' || statusLower === 'canceled') {
+          clearInterval(EXEC.pollTimer);
+          EXEC.pollTimer = null;
+
+          const isOk = statusLower === 'completed';
+          const termEl = document.getElementById('terminationSummary');
+          termEl.style.display = 'block';
+
+          if (isOk) {
+            // Collect loop exit summaries
+            let loopLines = loopRules.map(r => {
+              const iters = loopStates[r.id] || 0;
+              const maxIter = r.max_iterations;
+              const exitReason = maxIter && iters >= maxIter ? `forced exit after ${iters} iter${iters!==1?'s':''}` : `natural exit after ${iters} iter${iters!==1?'s':''}`;
+              return `<div style="font-size:11px; color:#fdba74;">↩ <b>${escHtml(r.name)}</b>: ${exitReason}</div>`;
+            }).join('');
+
+            termEl.style.borderColor = '#22c55e80';
+            termEl.style.background = 'rgba(34,197,94,0.06)';
+            termEl.innerHTML = `
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="font-size:20px;">🏁</span>
+                <span style="font-weight:700; color:#4ade80; font-size:14px;">Graph Completed</span>
+              </div>
+              <div style="font-size:11px; color:#86efac; margin-bottom:4px;">${termDone} terminal rule${termDone!==1?'s':''} fired · ${done} total rules settled</div>
+              ${loopLines}
+            `;
+          } else if (statusLower === 'canceled') {
+            termEl.style.borderColor = '#f59e0b80';
+            termEl.style.background = 'rgba(245,158,11,0.06)';
+            termEl.innerHTML = `<span style="color:#fbbf24; font-weight:700;">⚠️ Run Canceled by user</span>`;
+          } else {
+            const failedRules = rules.filter(r => (r.status||'').toLowerCase() === 'failed');
+            termEl.style.borderColor = '#ef444480';
+            termEl.style.background = 'rgba(239,68,68,0.06)';
+            termEl.innerHTML = `
+              <div style="font-weight:700; color:#f87171; margin-bottom:4px;">❌ Run Failed</div>
+              ${failedRules.map(r => `<div style="font-size:11px;color:#fca5a5;">• ${escHtml(r.name)} on ${escHtml(r.owner_node_name || '?')}</div>`).join('')}
+            `;
+          }
+
+          log(`🏁 Run ${statusLower}: ${EXEC.runId}`, isOk ? 'ok' : 'err');
+        }
+
+      } catch (e) {
+        // Silently retry on network errors during polling
+        console.warn('Poll error:', e);
+      }
+    }
+
+    async function cancelRun() {
+      if (!EXEC.runId) return;
+      if (!confirm('Cancel this execution and cleanup results?')) return;
+
+      const ms15 = document.getElementById('ms15Url').value.trim();
+      const btn = document.getElementById('btnCancelRun');
+      btn.disabled = true;
+      btn.textContent = 'Stopping...';
+
+      try {
+        const res = await fetch(`${ms15}/run/${EXEC.runId}/cancel`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + STATE.token }
+        });
+        if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
+
+        log(`🛑 Run CANCELED by user: ${EXEC.runId}`, "err");
+
+        // Polling will take care of updating the badge since we marked it in Redis
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Cancel';
+      }
+    }
+
+    // ============================================
+    // 1. CONTEXT STRING BUILDER
+    // Uses `display_label` (pre-computed by API) as primary source.
+    // Falls back to local reconstruction for any missing case.
+    // Feedback projections (~X[...]) are rendered in orange.
+    // ============================================
+    function buildContextString(projId, depth = 0) {
+      if (depth > 10) return "<span style='color:red'>[Recursion Limit]</span>";
+
+      const p = STATE.projections.find(x => x.id === projId);
+      if (!p) return `<span style="color:red">Unknown(${projId.substring(0, 4)})</span>`;
+
+      // --- Use server-computed display_label if available ---
+      if (p.display_label) {
+        const label = p.display_label;
+        // Feedback context: label starts with ~
+        if (label.startsWith('~')) {
+          return `<span class="ctx-feedback">${escHtml(label)}</span>`;
+        }
+        // Seed
+        if (label === 'I') {
+          return `<span class="ctx-seed">${escHtml(getNodeName(p.owner_node_id))}[<span class="ctx-seed">Seed</span>]</span>`;
+        }
+        // Raw (non-selectable stream marker)
+        if (label.endsWith('[raw]')) {
+          return `<span class="ctx-raw">${escHtml(label)}</span>`;
+        }
+        // Forward derived — colour node name part cyan
+        const bracketIdx = label.indexOf('[');
+        if (bracketIdx > 0) {
+          const nodePart = label.substring(0, bracketIdx);
+          const innerPart = label.substring(bracketIdx);
+          return `<span class="ctx-node">${escHtml(nodePart)}</span><span style="color:#94a3b8">${escHtml(innerPart)}</span>`;
+        }
+        return escHtml(label);
+      }
+
+      // --- Fallback: local recursion (for projections without display_label) ---
+      const owner = getNodeName(p.owner_node_id);
+
+      // Seed
+      if (!p.ffi_id && !p.fbi_id && !p.created_by_rule_id) {
+        return `<span class="ctx-node">${owner}</span><span class="ctx-seed">[Seed]</span>`;
+      }
+      // Feedback raw
+      if (p.fbi_id && !p.created_by_rule_id) {
+        const fbi = STATE.fbis.find(f => f.id === p.fbi_id);
+        const ctrl = fbi ? getNodeName(fbi.source_node_id) : "?";
+        return `<span class="ctx-feedback">~${ctrl}[raw]</span>`;
+      }
+      // Forward raw
+      if (p.ffi_id && !p.created_by_rule_id) {
+        const ffi = STATE.ffis.find(f => f.id === p.ffi_id);
+        const src = ffi ? getNodeName(ffi.source_node_id) : "?";
+        return `<span class="ctx-raw">${owner}[Raw:${src}]</span>`;
+      }
+      // Derived
+      if (p.created_by_rule_id) {
+        if (p.children_ids && p.children_ids.length > 0) {
+          const childStrings = p.children_ids.map(cid => buildContextString(cid, depth + 1));
+          let op = ", ";
+          if (p.op === "AND") op = " <span class='ctx-op'>&</span> ";
+          if (p.op === "OR") op = " <span class='ctx-op'>|</span> ";
+          if (p.op === "SINGLE") op = " <span class='ctx-op'>-></span> ";
+          const wrapClass = p.fbi_id ? "ctx-feedback" : "ctx-node";
+          const prefix = p.fbi_id ? "~" : "";
+          return `<span class="${wrapClass}">${prefix}${owner}</span>[ ${childStrings.join(op)} ]`;
+        }
+        return `<span class="ctx-node">${owner}</span>[RuleResult]`;
+      }
+      return "?";
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ============================================
+    // 2. HELPER FUNCTIONS
+    // ============================================
+    function getNodeName(id) {
+      const n = STATE.nodes.find(x => x.id === id);
+      return n ? n.name : id.substring(0, 6);
+    }
+
+    function getRuleName(id) {
+      const r = STATE.rules.find(x => x.id === id);
+      return r ? r.name : id.substring(0, 6);
+    }
+
+    async function api(endpoint, method = "GET", body = null) {
+      const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${STATE.token}` };
+
+      log(`> ${method} ${endpoint}`, "req");
+      if (body) log(`  Body: ${JSON.stringify(body)}`, "req");
+
+      try {
+        const res = await fetch(`${API_BASE}${endpoint}`, { method, headers, body: body ? JSON.stringify(body) : null });
+
+        if (res.status === 204) {
+          log(`< ${method} ${endpoint} (204 No Content)`, "ok");
+          return null;
+        }
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const errMsg = data.detail || JSON.stringify(data);
+          log(`< ERROR ${res.status}: ${errMsg}`, "err");
+          throw new Error(errMsg);
+        }
+
+        log(`< ${method} ${endpoint} (${res.status})`, "ok");
+        // Optional: Log response data key/summary if needed, but might be too verbose.
+        // keeping it simple for now as per user request for "responses" usually implying success/content.
+        // If data is small, log it? Let's log it if it's not a GET listing (too spammy).
+        if (method !== "GET" || !Array.isArray(data)) {
+          log(`  Resp: ${JSON.stringify(data).substring(0, 200) + (JSON.stringify(data).length > 200 ? "..." : "")}`, "ok");
+        }
+
+        return data;
+      } catch (e) {
+        // Already logged error in !res.ok block if it was an API error.
+        // If it was a network error (fetch failed), log it here.
+        if (!e.message.includes("HTTP")) { // simple check to avoid double logging if we threw above
+          log(`NETWORK ERROR: ${e.message}`, "err");
+        }
+        throw e;
+      }
+    }
+
+    // ============================================
+    // 3. UI RENDERING
+    // ============================================
+    function renderAll() {
+      const nodeOpts = STATE.nodes.map(n => `<option value="${n.id}">${n.name}</option>`).join("");
+      document.getElementById("edgeSource").innerHTML = nodeOpts;
+      document.getElementById("edgeDest").innerHTML = nodeOpts;
+
+      const curRuleOwner = document.getElementById("ruleOwner").value;
+      document.getElementById("ruleOwner").innerHTML = "<option value=''>-- Select Node --</option>" + nodeOpts;
+      if (curRuleOwner) document.getElementById("ruleOwner").value = curRuleOwner;
+
+      // NODES
+      document.getElementById("nodesList").innerHTML = STATE.nodes.map(n => `
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-title">${n.name}</span>
+                    <div>
+                        ${n.is_start ? '<span class="badge green">START</span>' : ''}
+                        ${n.ms4_node_id ? '<span class="badge blue">MS4</span>' : ''}
+                    </div>
+                </div>
+                <div style="font-size:10px; color:#64748b; font-family:monospace;">${n.id}</div>
+                ${n.is_start ? '<div style="margin-top:8px; padding:6px; background:#0a1a0a; border:1px solid #22c55e; border-radius:4px;"><label style="color:#86efac; font-weight:700; font-size:11px; display:block; margin-bottom:3px;">SEED INPUT:</label><textarea id="seed_' + n.id + '" rows="2" placeholder="Enter seed for ' + n.name + '..." style="font-size:11px; width:100%; background:#1e293b; color:#e2e8f0; border:1px solid #334155; padding:5px; border-radius:3px; resize:vertical;"></textarea></div>' : ''}
+                <div style="position:absolute; bottom:5px; right:5px; display:flex; gap:5px;">
+                    <button class="sm" onclick="openNodeEditor('${n.id}')">Edit</button>
+                    <button class="sm danger" onclick="deleteItem('nodes', '${n.id}')">Del</button>
+                </div>
+            </div>
+        `).join("");
+
+      // EDGES
+      const fwdEdges = STATE.edges.filter(e => (e.edge_type || 'FORWARD') === 'FORWARD');
+      const fbkEdges = STATE.edges.filter(e => e.edge_type === 'FEEDBACK');
+
+      document.getElementById("edgesList").innerHTML = [
+        (fbkEdges.length > 0 ? `<div style="font-size:11px; color:#f97316; font-weight:bold; margin:4px 0 2px;">↩ FEEDBACK (${fbkEdges.length})</div>` : ''),
+        ...fbkEdges.map(e => `
+          <div class="item edge-feedback" style="border-left:3px solid #f97316">
+            <div class="item-header">
+              <span class="item-title">
+                <span style="color:#f97316;">↩</span>
+                ${getNodeName(e.source_node_id)}
+                <span style="color:#f97316;">⟿</span>
+                ${getNodeName(e.dest_node_id)}
+              </span>
+              <span class="badge" style="background:rgba(249,115,22,0.15); color:#f97316; border:1px solid rgba(249,115,22,0.3);">FEEDBACK</span>
+            </div>
+            <div style="font-size:10px; color:#7c3aed; font-family:monospace; margin-bottom:4px;">~${getNodeName(e.source_node_id)}[...] context</div>
+            <button class="sm danger" style="width:100%" onclick="deleteItem('edges', '${e.id}')">Delete Edge</button>
+          </div>`),
+        (fwdEdges.length > 0 ? `<div style="font-size:11px; color:#93c5fd; font-weight:bold; margin:8px 0 2px;">→ FORWARD (${fwdEdges.length})</div>` : ''),
+        ...fwdEdges.map(e => `
+          <div class="item edge-forward" style="border-left:3px solid var(--primary)">
+            <div class="item-header">
+              <span class="item-title">${getNodeName(e.source_node_id)} ➝ ${getNodeName(e.dest_node_id)}</span>
+              <span class="badge blue">FWD</span>
+            </div>
+            <button class="sm danger" style="width:100%" onclick="deleteItem('edges', '${e.id}')">Delete Edge</button>
+          </div>`)
+      ].join("");
+
+      // RULES
+      document.getElementById("rulesList").innerHTML = STATE.rules.map(r => {
+        const inputs = r.input_projection_ids.map(pid => `<div style="padding-left:10px; border-left:2px solid #334155; margin-top:2px;">${buildContextString(pid)}</div>`).join("");
+        const isController = r.output_fbo_ids && r.output_fbo_ids.length > 0;
+        const ownerName = getNodeName(r.owner_node_id);
+        const maxIterBadge = (isController && r.max_iterations != null)
+          ? `<span class="iter-pill" title="Max ${r.max_iterations} iterations">max ${r.max_iterations}×</span>`
+          : (isController ? '<span class="iter-pill" style="color:#94a3b8; border-color:#334155; background:#1e293b;">∞ loop</span>' : '');
+        return `
+            <div class="item" style="border-left:3px solid ${isController ? '#f97316' : 'var(--warning)'}">
+                <div class="item-header">
+                    <div>
+                      <span class="item-title">${r.name || "Rule"}</span>
+                      <div style="font-size:10px; margin-top:2px;">
+                        <span style="color:#64748b;">owner: </span>
+                        <span style="color:#a5f3fc; font-weight:700; background:rgba(165,243,252,0.08); padding:1px 5px; border-radius:3px; border:1px solid rgba(165,243,252,0.2);">${ownerName}</span>
+                      </div>
+                    </div>
+                    <div style="display:flex; gap:4px; align-items:flex-start; flex-direction:column;">
+                      <span class="badge">${r.firing_mode}</span>
+                      ${r.is_terminal ? '<span class="badge red">TERM</span>' : ''}
+                      ${isController ? '<span class="badge" style="background:rgba(249,115,22,0.15);color:#f97316;border:1px solid rgba(249,115,22,0.3);">↩CTRL</span>' : ''}
+                      ${maxIterBadge}
+                    </div>
+                </div>
+                <div style="font-size:11px; margin-bottom:8px;" class="ctx-wrapper">${inputs}</div>
+                <div class="flex-row">
+                    <button class="sm" onclick="openPromptEditor('${r.id}')">📝 Prompt</button>
+                    <button class="sm danger" onclick="deleteItem('rules', '${r.id}')">Del</button>
+                </div>
+            </div>
+            `;
+      }).join("");
+
+      // NODE CONTEXT ANALYSIS (Grouped by Node)
+      document.getElementById("projectionsList").innerHTML = STATE.nodes.map(node => {
+        // Include selectable projections AND home-run projections (which evaluate as not selectable but still need to be shown)
+        const nodeProjs   = STATE.projections.filter(p => p.owner_node_id === node.id && (p.is_selectable || p.is_home_run));
+        const nodeFFIs    = STATE.ffis.filter(f => f.owner_node_id === node.id);
+        const nodeFFOs    = STATE.ffos.filter(f => f.owner_node_id === node.id);
+        const nodeFBIs    = STATE.fbis.filter(f => f.owner_node_id === node.id);
+        const nodeFBOs    = STATE.fbos.filter(f => f.owner_node_id === node.id);
+
+        if (nodeProjs.length === 0 && nodeFFIs.length === 0 && nodeFFOs.length === 0 && nodeFBIs.length === 0 && nodeFBOs.length === 0) return "";
+
+        // Split projections by context family
+        const fwdProjs = nodeProjs.filter(p => p.context_family !== 'FEEDBACK');
+        const fbkProjs = nodeProjs.filter(p => p.context_family === 'FEEDBACK');
+
+        return `
+            <div class="item" style="border-left: 2px solid #64748b;">
+                <div class="item-header" style="border-bottom: 1px solid #334155; margin-bottom: 5px;">
+                    <span class="item-title" style="color:#fff; font-size:14px;">${node.name}</span>
+                    <span style="font-size:10px; color:#64748b; float:right;">${node.id.substring(0, 8)}...</span>
+                </div>
+
+                <!-- FFIs (forward inputs) -->
+                ${nodeFFIs.length > 0 ? '<div style="font-size:11px; color:#93c5fd; font-weight:bold; margin-top:5px;">→ FFI (Forward In)</div>' : ''}
+                ${nodeFFIs.map(f => `<div style="padding-left:10px; font-size:11px; color:#cbd5e1;">← From <b>${getNodeName(f.source_node_id)}</b></div>`).join("")}
+
+                <!-- FBIs (feedback inputs) -->
+                ${nodeFBIs.length > 0 ? '<div style="font-size:11px; color:#f97316; font-weight:bold; margin-top:5px;">↩ FBI (Feedback In)</div>' : ''}
+                ${nodeFBIs.map(f => `<div style="padding-left:10px; font-size:11px; color:#fdba74;">~${getNodeName(f.source_node_id)}[...] <span style="color:#7c3aed; font-size:10px;">feedback channel</span></div>`).join("")}
+
+                <!-- Forward Projections -->
+                ${fwdProjs.length > 0 ? '<div style="font-size:11px; color:#86efac; font-weight:bold; margin-top:5px;">⚡ Forward CTX</div>' : ''}
+                ${fwdProjs.map(p => `<div style="padding-left:10px; margin-bottom:4px; border-bottom:1px dashed #1e293b; padding-bottom:2px;" class="ctx-wrapper">${buildContextString(p.id)}</div>`).join("")}
+
+                <!-- Feedback Projections -->
+                ${fbkProjs.length > 0 ? '<div style="font-size:11px; color:#f97316; font-weight:bold; margin-top:5px;">↩ Feedback CTX &nbsp;<span style="font-size:9px; color:#7c3aed;">~X notation</span></div>' : ''}
+                ${fbkProjs.map(p => `<div style="padding-left:10px; margin-bottom:4px; border-bottom:1px dashed #2d1a00; padding-bottom:2px;" class="ctx-wrapper">${buildContextString(p.id)} ${p.is_home_run ? '<span style="margin-left:8px; font-size:9px; font-weight:bold; background:rgba(34,197,94,0.15); color:#4ade80; padding:1px 5px; border-radius:3px; border:1px solid rgba(34,197,94,0.3);">🏁 HOME RUN</span>' : ''}</div>`).join("")}
+
+                <!-- FFOs (forward outputs) -->
+                ${nodeFFOs.length > 0 ? '<div style="font-size:11px; color:#fca5a5; font-weight:bold; margin-top:5px;">→ FFO (Forward Out)</div>' : ''}
+                ${nodeFFOs.map(f => `<div style="padding-left:10px; font-size:11px; color:#cbd5e1;">→ To <b>${getNodeName(f.dest_node_id)}</b></div>`).join("")}
+
+                <!-- FBOs (feedback outputs / controller) -->
+                ${nodeFBOs.length > 0 ? '<div style="font-size:11px; color:#fb923c; font-weight:bold; margin-top:5px;">↩ FBO (Controller Out)</div>' : ''}
+                ${nodeFBOs.map(f => `<div style="padding-left:10px; font-size:11px; color:#fdba74;">⟿ Feedback to <b>${getNodeName(f.dest_node_id)}</b></div>`).join("")}
+            </div>
+        `;
+      }).join("");
+
+      document.getElementById("countNodes").innerText = STATE.nodes.length;
+      const fwdCount  = STATE.edges.filter(e => (e.edge_type || 'FORWARD') === 'FORWARD').length;
+      const fbkCount  = STATE.edges.filter(e => e.edge_type === 'FEEDBACK').length;
+      const edgeBadge = document.getElementById("countEdges");
+      edgeBadge.innerText = `${fwdCount}F ${fbkCount > 0 ? fbkCount + '↩' : ''}`;
+      edgeBadge.style.color = fbkCount > 0 ? '#f97316' : '';
+      document.getElementById("countRules").innerText = STATE.rules.length;
+
+    }
+
+    // ============================================
+    // 4. RULE WIZARD LOGIC (AUTO-CONSTANTS)
+    // ============================================
+    function renderRuleOptions() {
+      const ownerId = document.getElementById("ruleOwner").value;
+      const inDiv = document.getElementById("ruleInputsContainer");
+      const outDiv = document.getElementById("ruleOutputsContainer");
+      const msgDiv = document.getElementById("ruleValidationMsg");
+
+      msgDiv.innerText = "";
+
+      if (!ownerId) {
+        inDiv.innerHTML = '<span style="color:#64748b;">Select node...</span>';
+        outDiv.innerHTML = '<span style="color:#64748b;">Select node...</span>';
+        return;
+      }
+
+      // INPUTS: Projections owned by node + selectable
+      const validInputs = STATE.projections.filter(p => p.owner_node_id === ownerId && p.is_selectable);
+      if (validInputs.length === 0) {
+        inDiv.innerHTML = '<span style="color:#f59e0b;">No available inputs. Connect edge or set Start.</span>';
+      } else {
+        inDiv.innerHTML = validInputs.map(p => `
+                <div class="checkbox-item">
+                    <input type="checkbox" name="ruleInput" value="${p.id}" onchange="updateRuleMode()">
+                    <span class="ctx-wrapper">${buildContextString(p.id)}</span>
+                </div>`).join("");
+      }
+
+      // OUTPUTS: FFOs (forward) + FBOs (feedback) owned by node
+      const ffoOutputs = STATE.ffos.filter(f => f.owner_node_id === ownerId);
+      const fboOutputs = STATE.fbos.filter(f => f.owner_node_id === ownerId);
+
+      if (ffoOutputs.length === 0 && fboOutputs.length === 0) {
+        outDiv.innerHTML = '<span style="color:#64748b;">No outgoing connections.</span>';
+      } else {
+        let outHtml = '';
+
+        if (ffoOutputs.length > 0) {
+          outHtml += '<div style="font-size:10px; color:#93c5fd; font-weight:bold; margin-bottom:4px;">→ Forward Outputs (FFO)</div>';
+          outHtml += ffoOutputs.map(f => `
+            <div class="checkbox-item">
+              <input type="checkbox" name="ruleOutput" data-type="ffo" value="${f.id}">
+              <span>→ To <b>${getNodeName(f.dest_node_id)}</b></span>
+            </div>`).join("");
+        }
+
+        if (fboOutputs.length > 0) {
+          outHtml += '<div style="font-size:10px; color:#f97316; font-weight:bold; margin:8px 0 4px;">↩ Feedback Outputs (FBO) <span style="color:#7c3aed;font-size:9px;">Controller</span></div>';
+          outHtml += fboOutputs.map(f => `
+            <div class="checkbox-item">
+              <input type="checkbox" name="ruleOutput" data-type="fbo" value="${f.id}">
+              <span style="color:#fdba74;">~${getNodeName(f.owner_node_id)}[...] ↩ to <b>${getNodeName(f.dest_node_id)}</b></span>
+            </div>`).join("");
+        }
+
+        outDiv.innerHTML = outHtml;
+      }
+
+      // Show/hide max_iterations based on whether any FBO outputs exist
+      const hasFboOutputs = STATE.fbos.some(f => f.owner_node_id === ownerId);
+      toggleMaxIterField(hasFboOutputs);
+    }
+
+    function toggleMaxIterField(show) {
+      const wrap = document.getElementById('maxIterWrapper');
+      if (show) {
+        wrap.classList.add('visible');
+      } else {
+        wrap.classList.remove('visible');
+        document.getElementById('maxIterations').value = '';
+      }
+    }
+
+    function updateRuleMode() {
+      const checkedCount = document.querySelectorAll("input[name='ruleInput']:checked").length;
+      const modeSel = document.getElementById("ruleMode");
+      const msgDiv = document.getElementById("ruleValidationMsg");
+      const btn = document.getElementById("btnCreateRule");
+
+      if (checkedCount === 0) {
+        modeSel.value = "SINGLE";
+        modeSel.disabled = true;
+        btn.disabled = true;
+        msgDiv.innerText = "Select at least 1 input.";
+      } else if (checkedCount === 1) {
+        modeSel.value = "SINGLE";
+        modeSel.disabled = true; // Locked to SINGLE
+        btn.disabled = false;
+        msgDiv.innerText = "1 Input selected -> Mode locked to SINGLE.";
+      } else {
+        // Multi input
+        if (modeSel.value === "SINGLE") modeSel.value = "AND";
+        modeSel.disabled = false;
+        // Disable SINGLE option in dropdown visually if possible, or just validation
+        Array.from(modeSel.options).forEach(opt => {
+          opt.disabled = (opt.value === "SINGLE");
+        });
+        btn.disabled = false;
+        msgDiv.innerText = "Multiple inputs -> Choose AND or OR.";
+      }
+    }
+
+    // ============================================
+    // 5. PROMPT EDITOR
+    // ============================================
+    async function openPromptEditor(ruleId) {
+      STATE.activeRuleId = ruleId;
+      document.getElementById("promptModal").showModal();
+      document.getElementById("promptText").value = "Loading...";
+
+      try {
+        const tpl = await api(`/prompt-templates/${ruleId}/`);
+        document.getElementById("promptText").value = tpl.template_text;
+
+        // Build Context Map
+        const mapHtml = Object.entries(tpl.placeholder_map).map(([key, pid]) => {
+          return `<div style="display:flex; gap:10px; border-bottom:1px dashed #334155; margin-bottom:5px;">
+                    <span style="color:var(--primary); font-weight:bold;">{${key}}</span>
+                    <span class="ctx-wrapper">${buildContextString(pid)}</span>
+                </div>`;
+        }).join("");
+        document.getElementById("promptMap").innerHTML = mapHtml;
+
+      } catch (e) {
+        document.getElementById("promptText").value = "Error: " + e.message;
+      }
+    }
+
+    async function savePromptTemplate() {
+      if (!STATE.activeRuleId) return;
+      const txt = document.getElementById("promptText").value;
+      try {
+        await api(`/prompt-templates/${STATE.activeRuleId}/text/`, "PATCH", { template_text: txt });
+        log("Prompt template saved.", "ok");
+        document.getElementById("promptModal").close();
+      } catch (e) { alert(e.message); }
+    }
+
+    // ============================================
+    // 5b. NODE EDITOR
+    // ============================================
+    let activeEditNodeId = null;
+
+    function openNodeEditor(id) {
+      const n = STATE.nodes.find(x => x.id === id);
+      if (!n) return;
+      activeEditNodeId = id;
+
+      document.getElementById("editNodeName").value = n.name;
+      document.getElementById("editNodeMs4").value = n.ms4_node_id || "";
+      document.getElementById("editNodeStart").checked = n.is_start;
+
+      document.getElementById("nodeEditModal").showModal();
+    }
+
+    async function saveNodeUpdate() {
+      if (!activeEditNodeId) return;
+
+      const name = document.getElementById("editNodeName").value;
+      const ms4 = document.getElementById("editNodeMs4").value || null;
+      const isStart = document.getElementById("editNodeStart").checked;
+
+      try {
+        await api(`/nodes/${activeEditNodeId}/`, "PATCH", {
+          name: name,
+          ms4_node_id: ms4,
+          is_start: isStart
+        });
+        log("Node updated.", "ok");
+        document.getElementById("nodeEditModal").close();
+        refreshGraphData();
+      } catch (e) { alert(e.message); }
+    }
+
+    // ============================================
+    // 6. CRUD ACTIONS
+    // ============================================
+
+    async function createGraph() {
+      const name = document.getElementById("newGraphName").value;
+      if (!name) return alert("Name required");
+      await api("/graphs/", "POST", { project_id: STATE.projectId, name });
+      document.getElementById("newGraphName").value = "";
+      await loadGraphs();
+    }
+
+    async function deleteCurrentGraph() {
+      if (!STATE.graphId) return alert("Select graph");
+      if (!confirm("DELETE GRAPH? Cannot be undone.")) return;
+
+      try {
+        await api(`/graphs/${STATE.graphId}/`, "DELETE");
+        log("Graph deleted.", "ok");
+        STATE.graphId = "";
+        document.getElementById("graphSelect").value = "";
+        document.getElementById("graphStatus").innerText = "Deleted";
+        document.getElementById("graphStatus").className = "badge red";
+        clearLists();
+        await loadGraphs();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function createRule() {
+      const inputs = Array.from(document.querySelectorAll("input[name='ruleInput']:checked")).map(x => x.value);
+      // Separate forward (FFO) and feedback (FBO) outputs by data-type attribute
+      const allOutputChecks = Array.from(document.querySelectorAll("input[name='ruleOutput']:checked"));
+      const outputs     = allOutputChecks.filter(x => (x.dataset.type || 'ffo') === 'ffo').map(x => x.value);
+      const fboOutputs  = allOutputChecks.filter(x => x.dataset.type === 'fbo').map(x => x.value);
+      const mode = document.getElementById("ruleMode").value;
+      const isTerm = document.getElementById("ruleTerminal").checked;
+      const owner = document.getElementById("ruleOwner").value;
+      const name = document.getElementById("ruleName").value;
+
+      if (inputs.length === 0) return alert("Inputs required");
+      if (!isTerm && outputs.length === 0 && fboOutputs.length === 0)
+        return alert("Select at least one output (Forward FFO or Feedback FBO)");
+      if (outputs.length > 0 && fboOutputs.length > 0)
+        return alert("Controller exclusivity: cannot select both Forward (FFO) and Feedback (FBO) outputs in the same rule.");
+
+      try {
+        const maxIterRaw = document.getElementById('maxIterations').value.trim();
+        const maxIterVal = maxIterRaw !== '' ? parseInt(maxIterRaw, 10) : null;
+
+        if (maxIterVal !== null && (isNaN(maxIterVal) || maxIterVal < 1)) {
+          return alert('Max Iterations must be a positive integer (or blank for infinite)');
+        }
+
+        await api("/rules/", "POST", {
+          graph_id: STATE.graphId,
+          owner_node_id: owner,
+          name: name,
+          firing_mode: mode,
+          is_terminal: isTerm,
+          input_projection_ids: inputs,
+          output_ffo_ids: outputs,
+          output_fbo_ids: fboOutputs,
+          ...(maxIterVal !== null ? { max_iterations: maxIterVal } : {}),
+        });
+        refreshGraphData();
+        log("Rule created.", "ok");
+        document.getElementById('maxIterations').value = '';
+      } catch (e) { alert(e.message); }
+    }
+
+    async function createNode() {
+      await api("/nodes/", "POST", {
+        graph_id: STATE.graphId,
+        name: document.getElementById("nodeName").value,
+        is_start: document.getElementById("nodeIsStart").checked,
+        ms4_node_id: document.getElementById("nodeMs4Id").value || null
+      });
+      refreshGraphData();
+    }
+
+    async function createEdge() {
+      await api("/edges/", "POST", {
+        graph_id: STATE.graphId,
+        source_node_id: document.getElementById("edgeSource").value,
+        dest_node_id: document.getElementById("edgeDest").value
+      });
+      refreshGraphData();
+    }
+
+    async function deleteItem(type, id) {
+      if (!confirm("Delete?")) return;
+      await api(`/${type}/${id}/`, "DELETE");
+      refreshGraphData();
+    }
+
+    // --- BASE UTILS ---
+    function setToken() {
+      STATE.token = document.getElementById("token").value.trim();
+      document.getElementById("authStatus").innerText = STATE.token ? "Auth OK" : "No Auth";
+      document.getElementById("authStatus").className = STATE.token ? "badge green" : "badge red";
+    }
+
+    async function loadGraphs() {
+      STATE.projectId = document.getElementById("projectId").value.trim();
+      if (!STATE.projectId || !STATE.token) return;
+      const data = await api(`/graphs/?project_id=${STATE.projectId}`);
+      const sel = document.getElementById("graphSelect");
+      sel.innerHTML = "<option value=''>Select...</option>";
+      data.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.innerText = g.name;
+        sel.appendChild(opt);
+      });
+      loadMs4Nodes();
+    }
+
+    function selectGraph() {
+      STATE.graphId = document.getElementById("graphSelect").value;
+      if (STATE.graphId) {
+        document.getElementById("graphStatus").innerText = "Active";
+        document.getElementById("graphStatus").className = "badge blue";
+        refreshGraphData();
+      }
+    }
+
+    async function refreshGraphData() {
+      if (!STATE.graphId) return;
+      const [nodes, edges, rules, ffis, ffos, fbis, fbos] = await Promise.all([
+        api(`/nodes/?graph_id=${STATE.graphId}`),
+        api(`/edges/?graph_id=${STATE.graphId}`),
+        api(`/rules/?graph_id=${STATE.graphId}`),
+        api(`/ffis/?graph_id=${STATE.graphId}`),
+        api(`/ffos/?graph_id=${STATE.graphId}`),
+        api(`/fbis/?graph_id=${STATE.graphId}`).catch(() => []),
+        api(`/fbos/?graph_id=${STATE.graphId}`).catch(() => []),
+      ]);
+      STATE.nodes = nodes; STATE.edges = edges; STATE.rules = rules;
+      STATE.ffis = ffis; STATE.ffos = ffos;
+      STATE.fbis = fbis || []; STATE.fbos = fbos || [];
+
+      // Fetch projections node-by-node
+      const pPromises = STATE.nodes.map(n => api(`/projections/?owner_node=${n.id}`));
+      STATE.projections = (await Promise.all(pPromises)).flat();
+
+      renderAll();
+      renderRuleOptions();
+
+      const fbkEdges = STATE.edges.filter(e => e.edge_type === 'FEEDBACK').length;
+      log(`Data refreshed. Nodes:${STATE.nodes.length} Edges:${STATE.edges.length} (↩${fbkEdges} feedback) Rules:${STATE.rules.length}`, "ok");
+    }
+
+    function clearLists() {
+      document.getElementById("nodesList").innerHTML = "";
+      document.getElementById("edgesList").innerHTML = "";
+      document.getElementById("rulesList").innerHTML = "";
+      document.getElementById("projectionsList").innerHTML = "";
+    }
+    function showTab(t) {
+      ['tabNode', 'tabEdge', 'tabGraph'].forEach(x => document.getElementById(x).style.display = 'none');
+      document.getElementById(t).style.display = 'block';
+    }
+    function log(msg, type = "info") {
+      const el = document.getElementById("log");
+      const c = type === "err" ? "#ef4444" : type === "ok" ? "#22c55e" : "#94a3b8";
+      el.innerHTML += `<div class="log-line" style="color:${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+    function clearLog() { document.getElementById("log").innerHTML = ""; }
+  </script>
+</body>
+
+</html>

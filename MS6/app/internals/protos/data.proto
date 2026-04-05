@@ -1,0 +1,40 @@
+// MS10/data_internals/protos/data.proto
+syntax = "proto3";
+package data;
+import "google/protobuf/struct.proto";
+
+service DataService {
+  // RPC for MS6: Retrieves the parsed content of a file.
+  rpc GetFileContent(GetFileContentRequest) returns (GetFileContentResponse);
+  
+  // NEW RPC for MS5: Retrieves file metadata for validation.
+  rpc GetFileMetadata(GetFileMetadataRequest) returns (GetFileMetadataResponse);
+}
+
+// --- Messages for GetFileContent (Unchanged) ---
+message GetFileContentRequest {
+  string file_id = 1;
+  string user_id = 2;
+}
+
+message GetFileContentResponse {
+  string file_id = 1;
+  google.protobuf.Struct content = 2; // Flexible for text, image_url, etc.
+}
+
+
+// --- NEW MESSAGES for GetFileMetadata ---
+message FileMetadata {
+    string file_id = 1;
+    string mimetype = 2;
+    // We don't need to send owner_id back, MS5 already knows the user_id it's checking for.
+}
+
+message GetFileMetadataRequest {
+    repeated string file_ids = 1;
+    string user_id = 2;
+}
+
+message GetFileMetadataResponse {
+    repeated FileMetadata metadata = 1;
+}

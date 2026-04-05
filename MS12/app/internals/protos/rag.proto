@@ -1,0 +1,42 @@
+// MS11/rag_internals/protos/rag.proto
+syntax = "proto3";
+package rag; // Keep the same package name for simplicity
+
+// Service for external queries (e.g., from MS5)
+service RAGService {
+  rpc RetrieveRelevantChunks(RetrieveRequest) returns (RetrieveResponse);
+}
+
+// --- ADD THIS NEW SERVICE DEFINITION ---
+// Service for internal operations (e.g., from MS12)
+service RAGInternalService {
+  rpc UpdateFileLinkStatus(UpdateFileLinkStatusRequest) returns (UpdateFileLinkStatusResponse);
+}
+// --- END OF ADDITION ---
+
+// Messages for RAGService
+message RetrieveRequest {
+  string collection_id = 1;
+  string user_id = 2;
+  string query = 3;
+  int32 top_k = 4;
+}
+message DocumentChunk {
+    string content = 1;
+    map<string, string> metadata = 2;
+    float score = 3;
+}
+message RetrieveResponse {
+    repeated DocumentChunk chunks = 1;
+}
+
+// --- ADD THESE NEW MESSAGES ---
+// Messages for RAGInternalService
+message UpdateFileLinkStatusRequest {
+  string link_id = 1;
+  string status = 2; // e.g., "ingesting", "completed", "error"
+}
+message UpdateFileLinkStatusResponse {
+    bool success = 1;
+}
+// --- END OF ADDITION ---

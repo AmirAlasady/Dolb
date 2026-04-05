@@ -1,0 +1,25 @@
+// MS5/inference_internals/protos/rag.proto
+syntax = "proto3";
+package rag;
+
+service RAGService {
+  // For MS5: Retrieves relevant chunks from a knowledge collection for a given query.
+  rpc RetrieveRelevantChunks(RetrieveRequest) returns (RetrieveResponse);
+}
+
+message RetrieveRequest {
+  string collection_id = 1;
+  string user_id = 2; // For authorization
+  string query = 3;
+  int32 top_k = 4; // How many chunks to retrieve
+}
+
+message DocumentChunk {
+    string content = 1;
+    map<string, string> metadata = 2; // e.g., source file_id
+    float score = 3; // Relevance score
+}
+
+message RetrieveResponse {
+    repeated DocumentChunk chunks = 1;
+}

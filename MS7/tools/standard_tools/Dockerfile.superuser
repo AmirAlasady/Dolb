@@ -1,0 +1,52 @@
+# Use a full-featured Ubuntu 22.04 base image for broad package compatibility.
+FROM ubuntu:22.04
+
+# Set non-interactive mode to prevent installers like tzdata from prompting
+# for user input, which is essential for automated Docker builds.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update the package list and install all necessary tools in a single layer
+# to optimize image size and build time.
+# openssh-client provides both 'ssh' and 'scp'.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo \
+    git \
+    curl \
+    wget \
+    unzip \
+    ca-certificates \
+    openssh-client \
+    sshpass \
+    iputils-ping \
+    dnsutils \
+    net-tools \
+    python3 \
+    python3-pip \
+    python3-venv \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Security & Privilege Configuration ---
+# 1. Create a standard, non-root user named 'agent' for the AI to run as.
+#    -m creates a home directory at /home/agent.
+#    -s /bin/bash sets the default shell to bash.
+RUN useradd -m -s /bin/bash agent
+
+# 2. Add the new 'agent' user to the 'sudo' group.
+RUN usermod -aG sudo agent
+
+# 3. Configure sudo to allow any user in the 'sudo' group (which now includes 'agent')
+#    to run any command with `sudo` without being prompted for a password. This is the key
+#    that enables the AI agent to autonomously install packages or perform admin tasks.
+RUN echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# --- End of Security & Privilege Configuration ---
+
+# Switch the active user for all subsequent commands from root to our 'agent' user.
+# This is a security best practice.
+USER agent
+WORKDIR /home/agent/workspace
+
+# Set the default command to execute when the container starts.
+# `tail -f /dev/null` keeps the container running indefinitely so the agent
+# can execute commands inside it.
+CMD ["tail", "-f", "/dev/null"]

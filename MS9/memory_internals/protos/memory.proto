@@ -1,0 +1,22 @@
+// MS9/memory_internals/protos/memory.proto
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+package memory;
+
+service MemoryService {
+  // Fetches and processes the history for a given memory bucket.
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+}
+
+message GetHistoryRequest {
+  string bucket_id = 1;
+  string user_id = 2; // For authorization
+}
+
+message GetHistoryResponse {
+  string bucket_id = 1;
+  string memory_type = 2;
+  repeated google.protobuf.Struct history = 3; // The processed, ready-to-use context
+}

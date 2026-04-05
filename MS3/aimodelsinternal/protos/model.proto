@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+package model;
+
+service ModelService {
+  // Authorizes and retrieves the full, decrypted configuration for a model.
+  rpc GetModelConfiguration(GetModelConfigurationRequest) returns (GetModelConfigurationResponse);
+}
+
+message GetModelConfigurationRequest {
+  string model_id = 1;
+  string user_id = 2; // User ID from the JWT, for authorization.
+}
+
+message GetModelConfigurationResponse {
+  string provider = 1;
+  google.protobuf.Struct configuration = 2; // Full, decrypted config (including API keys).
+  repeated string capabilities = 3; // e.g., ["text", "vision"]
+}
