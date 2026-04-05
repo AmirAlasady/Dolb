@@ -713,14 +713,15 @@ This section details the specific data architecture for each microservice.
 
 The Graph Control Plane (MS14) and Execution Engine (MS15) represent the core innovation of this platform. It is not merely a Directed Acyclic Graph (DAG) system; it is a **Turing-complete state machine designed to execute complex, cyclic, and conditional AI workflows**.
 
-### Key Architectural Concepts:
+
 
 1.  **Topology vs. Logic Separation:**
     *   **Topology (MS14 Models):** `GNode` and `Edge` define the physical structure.
     *   **Logic (MS14 Models):** `Rule`, `Projection`, and `PromptTemplate` define the computational logic *within* each GNode. This separation allows the same graph topology to be reconfigured with different behaviors without changing its structure.
 
 2.  **The "Digital Circuit" Analogy:**
-    *   **GNodes** are like integrated circuits (ICs) on a motherboard.
+    *   **GNodes** are like integrated circuits (ICs) on a motherboard. ### Key Architectural Concepts:<img width="692" height="672" alt="Screenshot 2026-02-08 151230" src="https://github.com/user-attachments/assets/330b4b39-9e44-4d98-912a-4e7af10aef20" />
+
     *   **Edges** are the copper traces connecting them.
     *   **FFI/FFO/FBI/FBO Buffers** are the input/output pins on each IC.
     *   **Projections** are the semantic signals carried on the wires (e.g., `B[A[I]]` is the signal on the wire leading into Node C, representing "the output of B, which processed the output of A, which processed the initial Seed `I`").
